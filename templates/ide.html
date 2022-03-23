@@ -1,0 +1,26 @@
+{{ define "layout" }}
+
+<html>
+	<head>
+		<title> NHS CSHS FRC </title>
+	</head>
+
+	<body>
+		<h1> Integrated Development Environment! </h1>
+		<p> Hello, {{ .Username }}! </p>
+		<hr>
+
+		<form action="/ide/" method="POST">
+			<textarea name="python" rows="24" cols="80">{{ .Code }}</textarea><br>
+			 <input type="submit" value="Run!">
+		</form>
+
+		<pre>
+			<code>
+{{ .ExecutionStatus }}
+			</code>
+		</pre>
+	</body>
+</html>
+
+{{ end }}
