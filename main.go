@@ -19,6 +19,7 @@ import (
 	"crypto/sha1"
 	"net/http"
 	"os/exec"
+	"strings"
 	"log"
 	"os"
 )
@@ -73,7 +74,7 @@ type ideData struct {
 type session struct {
 	Username string
 	Password string
-	Xml string
+	Json string
 	Id string
 }
 
@@ -91,20 +92,9 @@ func index(w http.ResponseWriter, r *http.Request) {
 func ide(w http.ResponseWriter, r *http.Request) {
 	var output string = "[None yet]"
 	var oldCode = "import robot\n"
-
-	if r.Method == "POST" {
-		oldCode = r.FormValue("python")
-		out, err := exec.Command("python3", "python/jail.py", oldCode).CombinedOutput()
-		if err != nil {
-			log.Println("Python error: ", err)
-		}
-		output = string(out)
-	}
-
-	lp := filepath.Join(templateDirectory, "ide.html")
-	tmpl, _ := template.ParseFiles(lp)
-
+	
 	c, err := r.Cookie("session_token")
+	
 	if err != nil {
 		if err == http.ErrNoCookie {
 			// If the cookie is not set, return an unauthorized status
@@ -116,12 +106,43 @@ func ide(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lp := filepath.Join(templateDirectory, "ide.html")
+	tmpl, _ := template.ParseFiles(lp)
 
+	if r.Method == "POST" {
+		for i := 0; i < len(sessions); i++ {
+			if c.Value == sessions[i].Id { 
 
-	var data = ideData{ c.Value, oldCode, output }
+				oldCode = r.FormValue("python")
+				out, err := exec.Command("timeout", "0.2",
+						"python3", "python/jail.py", oldCode).CombinedOutput()
+				
+				if err != nil {
+					log.Println("Python error: ", err)
+				}
 
-	tmpl.ExecuteTemplate(w, "layout", data);
-	
+				output = string(out)
+
+				split := strings.Split(output, "=== JSON Output ===")	
+				if len(split) > 1 {
+					log.Println(split[1])
+					sessions[i].Json = split[1]
+				}
+			}
+		}
+	}
+
+	for i := 0; i < len(sessions); i++ {
+		if c.Value == sessions[i].Id { 
+			var data = ideData{ sessions[i].Username, oldCode, output }
+			tmpl.ExecuteTemplate(w, "layout", data);
+				var data = ideData{ sessions[i].Username, oldCode, output }
+				tmpl.ExecuteTemplate(w, "layout", data);
+			return
+		}
+	}
+
+	http.Redirect(w, r, "/auth/", http.StatusSeeOther)
 }
 
 // Function to process the authentication of clients
