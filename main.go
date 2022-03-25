@@ -17,10 +17,13 @@ import (
 	"encoding/hex"
 	"encoding/csv"
 	"crypto/sha1"
+	"io/ioutil"
 	"net/http"
 	"os/exec"
 	"strings"
 	"log"
+	"net"
+	"fmt"
 	"os"
 )
 
@@ -70,6 +73,19 @@ type ideData struct {
 	ExecutionStatus string
 }
 
+// Data about the admin page
+type adminData struct {
+	Users []session
+	ExecutionStatus string
+	RobotIp string
+}
+
+// Data about the authentication page
+type authData struct {
+	Message string
+	Location string
+}
+
 // Session of each person
 type session struct {
 	Username string
@@ -80,12 +96,23 @@ type session struct {
 
 var sessions []session
 
+var robotIp string = "10.5.48.2:5800"
+
+const actionFiles string = "actionfiles/"
+
 // Function to process loading of the index.html file
 func index(w http.ResponseWriter, r *http.Request) {
 	lp := filepath.Join(templateDirectory, "index.html")
 	tmpl, _ := template.ParseFiles(lp)
 
 	tmpl.ExecuteTemplate(w, "layout", nil);
+}
+
+func saveActions(username string, actions string) {
+	err := os.WriteFile(actionFiles + username + ".actionfile", []byte(actions), 0666);
+	if err != nil {
+		log.Fatal(err)
+	}
 }
 
 // Function to process the loading of the virtual IDE
@@ -117,16 +144,23 @@ func ide(w http.ResponseWriter, r *http.Request) {
 				out, err := exec.Command("timeout", "0.2",
 						"python3", "python/jail.py", oldCode).CombinedOutput()
 				
-				if err != nil {
-					log.Println("Python error: ", err)
+				output = string(out)
+
+				if strings.Contains(fmt.Sprint(err), "exit status 1") {
+					output = "Internal error!"
 				}
 
-				output = string(out)
+				if strings.Contains(fmt.Sprint(err), "exit status 124") {
+					output = "Command Timed Out!\nEnsure that there are no delays or infinite loops in your code.\nIf the are no erroneous code blocks, try again, this could be an intermittant failure." 
+				}
+
+
 
 				split := strings.Split(output, "=== Action Output ===\n")	
 				if len(split) > 1 {
 					log.Println(split[1])
 					sessions[i].Actions = split[1]
+					saveActions(sessions[i].Username, sessions[i].Actions)
 				}
 			}
 		}
@@ -140,7 +174,19 @@ func ide(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	http.Redirect(w, r, "/auth/", http.StatusSeeOther)
+	http.Redirect(w, r, "/auth?location=ide", http.StatusSeeOther)
+}
+
+func about(w http.ResponseWriter, r *http.Request) {
+	lp := filepath.Join(templateDirectory, "about.html")
+	tmpl, _ := template.ParseFiles(lp)
+	tmpl.ExecuteTemplate(w, "layout", nil);
+}
+
+// Helper method to send data to the robot
+func sendStringTCP(location string, str string) {
+	conn, _ := net.Dial("tcp", location)
+	fmt.Fprintf(conn, str)	
 }
 
 // Function to process the loading of the admin page
@@ -157,6 +203,11 @@ func admin(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	
+	if r.Method == "POST" && c.Value == sessions[0].Id {
+		robotIp = r.FormValue("robot")
+	}
+
 
 	if c.Value == sessions[0].Id { 
 		lp := filepath.Join(templateDirectory, "admin.html")
@@ -164,28 +215,32 @@ func admin(w http.ResponseWriter, r *http.Request) {
 
 		users, ok := r.URL.Query()["user"]
 	    
-		if ok && len(users) == 1{
+		if ok && len(users) == 1 {
 			actions, ok := r.URL.Query()["action"]
-			if ok && len(users) == 1{
+			if ok && len(users) == 1 {
 				for i := 0; i < len(sessions); i++ {
 					if users[0] == sessions[i].Username { 
 						if actions[0] == "run" {
 							log.Println(sessions[i].Username)
-							// MAGIC CODE TO RUN THE ACTIONS HERE
+							sendStringTCP(robotIp, sessions[i].Actions)
+							log.Println("Done sending the stuff")
 						} else if actions[0] == "delete" {
 							sessions[i].Actions = ""
+							os.Remove(actionFiles + sessions[i].Username + ".actionfile")
 						}
 					}
 				}
 			}
 		}
 
-		tmpl.ExecuteTemplate(w, "layout", sessions);
+		data := adminData{ sessions, "Execution Status Here", robotIp }
+
+		tmpl.ExecuteTemplate(w, "layout", data);
 
 		return
 	}
 
-	http.Redirect(w, r, "/auth/", http.StatusSeeOther)
+	http.Redirect(w, r, "/auth?location=admin", http.StatusSeeOther)
 }
 
 // Function to process the authentication of clients
@@ -202,8 +257,9 @@ func auth(w http.ResponseWriter, r *http.Request) {
 					Value: sessions[i].Id,
 				}
 
-				http.SetCookie(w, cookie)
-				http.Redirect(w, r, "/ide/", http.StatusSeeOther)
+				http.SetCookie(w, cookie)	
+				http.Redirect(w, r, r.FormValue("location"), http.StatusSeeOther)
+
 				return
 			}
 		}
@@ -213,7 +269,15 @@ func auth(w http.ResponseWriter, r *http.Request) {
 	lp := filepath.Join(templateDirectory, "auth.html")
 	tmpl, _ := template.ParseFiles(lp)
 
-	tmpl.ExecuteTemplate(w, "layout", message);
+	loc := "/"
+	locations, ok := r.URL.Query()["location"]
+	if ok && len(locations) == 1 {
+		loc += locations[0]
+	}
+	
+	data := authData { message, loc }
+
+	tmpl.ExecuteTemplate(w, "layout", data);
 	
 }
 
@@ -264,10 +328,18 @@ func loadDatabaseKeys() []session {
 	}
 
 	for _, sesData := range sessData {
+		actions := ""
+		content, err := ioutil.ReadFile(actionFiles + sesData[0] + ".actionfile")
+
+		if err == nil {
+			actions = string(content)
+		}
+
 		ses := session {
 			Username: sesData[0],
 			Password: sesData[1],
 			Id: toSha1(sesData[1]),
+			Actions: actions,
 		}
 
 		sess = append(sess, ses)
@@ -275,19 +347,9 @@ func loadDatabaseKeys() []session {
 	return sess
 }
 
-
 // Main function to do the things
 func main() {
 	sessions = loadDatabaseKeys()
-
-	f, err := os.OpenFile("main.log", os.O_APPEND | os.O_CREATE | os.O_RDWR, 0666)
-	if err != nil {
-		log.Printf("Error opening file: %v!", err)
-	}
-
-	defer f.Close()
-
-	// log.SetOutput(f)
 
 	mux := http.NewServeMux()
 	sfs := http.FileServer(protectedFileSystem{ http.Dir(staticDirectory) })
@@ -297,6 +359,7 @@ func main() {
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/ide/", ide)
 	mux.HandleFunc("/auth/", auth)
+	mux.HandleFunc("/about/", about)
 	mux.HandleFunc("/admin/", admin)
 	mux.HandleFunc("/deauth/", deauth)
 
