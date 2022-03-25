@@ -21,6 +21,7 @@ import (
 	"net/http"
 	"os/exec"
 	"strings"
+	"runtime"
 	"log"
 	"net"
 	"fmt"
@@ -362,6 +363,10 @@ func main() {
 	mux.HandleFunc("/about/", about)
 	mux.HandleFunc("/admin/", admin)
 	mux.HandleFunc("/deauth/", deauth)
+
+	if runtime.GOOS != "linux" {
+		log.Fatal("Sadly (or not depending on how you look at it), this script will only run on Linux system due to it's reliance onchroot jails.")
+	}
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
 }
