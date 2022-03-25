@@ -1,0 +1,33 @@
+{{ define "layout" }}
+
+<html>
+	<head>
+		<title> NHS CSHS FRC </title>
+	</head>
+
+	<body>
+		<h1> Administration Page! </h1>
+		<hr>
+
+		<table border="1">
+			<tr>
+				<th> Username </th>	
+				<th> Actions </th>	
+				<th> Run </th>	
+				<th> Delete </th>	
+			</tr>
+
+			{{ range . }}
+			<tr>
+				<td> {{ .Username }} </td>
+				<td> <textarea cols="30">{{ .Actions }}</textarea> </td>
+				<td> <a href="?user={{ .Username }}&action=run">Run</a> </td>
+				<td> <a href="?user={{ .Username }}&action=delete">Delete</a> </td>
+			</tr>
+			{{ end }}
+		</table>	
+
+	</body>
+</html>
+
+{{ end }}

@@ -74,7 +74,7 @@ type ideData struct {
 type session struct {
 	Username string
 	Password string
-	Json string
+	Actions string
 	Id string
 }
 
@@ -123,10 +123,10 @@ func ide(w http.ResponseWriter, r *http.Request) {
 
 				output = string(out)
 
-				split := strings.Split(output, "=== JSON Output ===")	
+				split := strings.Split(output, "=== Action Output ===\n")	
 				if len(split) > 1 {
 					log.Println(split[1])
-					sessions[i].Json = split[1]
+					sessions[i].Actions = split[1]
 				}
 			}
 		}
@@ -136,10 +136,53 @@ func ide(w http.ResponseWriter, r *http.Request) {
 		if c.Value == sessions[i].Id { 
 			var data = ideData{ sessions[i].Username, oldCode, output }
 			tmpl.ExecuteTemplate(w, "layout", data);
-				var data = ideData{ sessions[i].Username, oldCode, output }
-				tmpl.ExecuteTemplate(w, "layout", data);
 			return
 		}
+	}
+
+	http.Redirect(w, r, "/auth/", http.StatusSeeOther)
+}
+
+// Function to process the loading of the admin page
+func admin(w http.ResponseWriter, r *http.Request) {
+	c, err := r.Cookie("session_token")
+	
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			http.Redirect(w, r, "/auth/", http.StatusSeeOther)
+			return
+		}
+		// For any other type of error, return a bad request status
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if c.Value == sessions[0].Id { 
+		lp := filepath.Join(templateDirectory, "admin.html")
+		tmpl, _ := template.ParseFiles(lp)
+
+		users, ok := r.URL.Query()["user"]
+	    
+		if ok && len(users) == 1{
+			actions, ok := r.URL.Query()["action"]
+			if ok && len(users) == 1{
+				for i := 0; i < len(sessions); i++ {
+					if users[0] == sessions[i].Username { 
+						if actions[0] == "run" {
+							log.Println(sessions[i].Username)
+							// MAGIC CODE TO RUN THE ACTIONS HERE
+						} else if actions[0] == "delete" {
+							sessions[i].Actions = ""
+						}
+					}
+				}
+			}
+		}
+
+		tmpl.ExecuteTemplate(w, "layout", sessions);
+
+		return
 	}
 
 	http.Redirect(w, r, "/auth/", http.StatusSeeOther)
@@ -176,6 +219,13 @@ func auth(w http.ResponseWriter, r *http.Request) {
 
 // Function to process the deauthentication of clients
 func deauth(w http.ResponseWriter, r *http.Request) {
+	cookie := &http.Cookie {
+		Name: "session_token",
+		Path: "/",
+		Value: "0",
+	}
+
+	http.SetCookie(w, cookie)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
@@ -247,6 +297,7 @@ func main() {
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/ide/", ide)
 	mux.HandleFunc("/auth/", auth)
+	mux.HandleFunc("/admin/", admin)
 	mux.HandleFunc("/deauth/", deauth)
 
 	log.Fatal(http.ListenAndServe(":8000", mux))
