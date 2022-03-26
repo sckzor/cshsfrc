@@ -185,9 +185,14 @@ func about(w http.ResponseWriter, r *http.Request) {
 }
 
 // Helper method to send data to the robot
-func sendStringTCP(location string, str string) {
-	conn, _ := net.Dial("tcp", location)
+func sendStringTCP(location string, str string) string {
+	conn, err := net.Dial("tcp", location)
+	if err != nil {
+		return fmt.Sprint(err)
+	}
+
 	fmt.Fprintf(conn, str)	
+	return "Success"
 }
 
 // Function to process the loading of the admin page
@@ -215,6 +220,8 @@ func admin(w http.ResponseWriter, r *http.Request) {
 		tmpl, _ := template.ParseFiles(lp)
 
 		users, ok := r.URL.Query()["user"]
+
+		status := ""
 	    
 		if ok && len(users) == 1 {
 			actions, ok := r.URL.Query()["action"]
@@ -223,7 +230,7 @@ func admin(w http.ResponseWriter, r *http.Request) {
 					if users[0] == sessions[i].Username { 
 						if actions[0] == "run" {
 							log.Println(sessions[i].Username)
-							sendStringTCP(robotIp, sessions[i].Actions)
+							status = sendStringTCP(robotIp, sessions[i].Actions)
 							log.Println("Done sending the stuff")
 						} else if actions[0] == "delete" {
 							sessions[i].Actions = ""
@@ -234,7 +241,7 @@ func admin(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
-		data := adminData{ sessions, "Execution Status Here", robotIp }
+		data := adminData{ sessions, status, robotIp }
 
 		tmpl.ExecuteTemplate(w, "layout", data);
 
