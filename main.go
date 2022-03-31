@@ -374,8 +374,8 @@ func main() {
 	mux.HandleFunc("/deauth/", deauth)
 
 	if runtime.GOOS != "linux" {
-		log.Fatal("Sadly (or not depending on how you look at it), this script will only run on Linux system due to it's reliance onchroot jails.")
+		log.Fatal("Sadly (or not depending on how you look at it), this script will only run on Linux system due to it's reliance on chroot jails for unprivelaged code execution.")
 	}
 
-	log.Fatal(http.ListenAndServe(":8000", mux))
+	log.Fatal(http.ListenAndServe(":80", mux))
 }

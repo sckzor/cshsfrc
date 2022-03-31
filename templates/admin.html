@@ -1,45 +1,62 @@
+
+
 {{ define "layout" }}
 
 <html>
 	<head>
+		<link rel="stylesheet" href="/static/style.css">
 		<title> NHS CSHS FRC </title>
 	</head>
 
 	<body>
-		<h1> Administration Page! </h1>
-		<hr>
+		<div class="main">
+			<div class="header">
+				<div class="header-icon">
+					<a href="/"> <img src="/static/combined.png"> </img> </a>
+				</div>
 
-		<form method="POST">
-			<label for="robot"> Robot IP Address: </label>
-			<input type="text" id="robot" name="robot" value="{{ .RobotIp }}">
-			<input type="submit" value="Submit"><br>
-		</form>
+				<div class="header-item">
+					<h1>Integrated Development Environment</h1>
+					<p> <a href="/ide/"> Code Editor </a>,  
+					<a href="/admin/"> Administration </a>, 
+					<a href="/about/"> About </a></p>
+				</div>
+			</div>
 
-		<table border="1">
-			<tr>
-				<th> Username </th>	
-				<th> Actions </th>	
-				<th> Run </th>	
-				<th> Delete </th>	
-			</tr>
+			<div class="body">
+				<div class="nested-body">
+					<h2> Administration Page </h2>
+					<form method="POST">
+						<label for="robot"> Robot IP Address: </label>
+						<input type="text" id="robot" name="robot" value="{{ .RobotIp }}">
+						<input type="submit" value="Submit"><br>
+					</form>
 
-			{{ range .Users }}
-			<tr>
-				<td> {{ .Username }} </td>
-				<td> <textarea cols="30">{{ .Actions }}</textarea> </td>
-				<td> <a href="?user={{ .Username }}&action=run">Run</a> </td>
-				<td> <a href="?user={{ .Username }}&action=delete">Delete</a> </td>
-			</tr>
-			{{ end }}
+					<table border="1">
+						<tr>
+							<th> Username </th>	
+							<th> Actions </th>	
+							<th> Run </th>	
+							<th> Delete </th>	
+						</tr>
 
-		</table>	
+						{{ range .Users }}
+						<tr>
+							<td> {{ .Username }} </td>
+							<td> <textarea cols="30">{{ .Actions }}</textarea> </td>
+							<td> <a href="?user={{ .Username }}&action=run">Run</a> </td>
+							<td> <a href="?user={{ .Username }}&action=delete">Delete</a> </td>
+						</tr>
+						{{ end }}
 
-		<pre><code>{{ .ExecutionStatus }}</code></pre>
+					</table>	
 
-		<form method="POST">
-			<input type="submit" value="Force File Cache Refresh"><br>
-		</form>
+					<pre><code>{{ .ExecutionStatus }}</code></pre>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
 
 {{ end }}
+
