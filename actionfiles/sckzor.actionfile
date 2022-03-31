@@ -1,6 +1,4 @@
-Drive:1
-Turn:1.5707970000000002
-Stop:0
-Drive:10
-Turn:1
+Start:0
+DriveX:1
+End:0
 

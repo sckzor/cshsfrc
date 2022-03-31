@@ -2,22 +2,43 @@
 
 <html>
 	<head>
+		<link rel="stylesheet" href="/static/style.css">
+		<link rel="stylesheet" href="/static/codemirror.css">
+		<script src="/static/codemirror.js"></script>
 		<title> NHS CSHS FRC </title>
 	</head>
 
 	<body>
-		<h1> Integrated Development Environment! </h1>
-		<p> Hello, {{ .Username }}! </p>
-		<a href="/deauth/">logout</a>
-		<hr>
+		<div class="main">
+			<div class="header">
+				<div class="header-icon">
+					<img src="/static/robostangs.png"> </img>
+				</div>
 
-		<form action="/ide/" method="POST">
-			<textarea name="python" rows="24" cols="80">{{ .Code }}</textarea><br>
-			 <input type="submit" value="Run!">
-		</form>
+				<div class="header-item">
+					<h1>Integrated Development Environment</h1>
+					<p> Hello, {{ .Username }}! Welcome to the IDE, you can logout by pressing <a href="/deauth/">here</a>. </p>
+				</div>
+			</div>
 
-		<pre><code>{{ .ExecutionStatus }}</code></pre>
+			<div class="body">
+				<div class="nested-body">
+					<h2> Enter Code Below: </h2>
+					<form action="/ide/" method="POST">
+						<textarea id="code" name="python" rows="24" cols="80">{{ .Code }}</textarea><br>
+						<input type="submit" value="Run!">
+					</form>
+
+					<pre><code>{{ .ExecutionStatus }}</code></pre>
+				</div>
+			</div>
+		</div>
 	</body>
+
+	<script>
+		var box = document.getElementById("code");
+		var editor = CodeMirror.fromTextArea(box, { lineNumbers: true, mode: "text/x-cython" });
+	</script>
 </html>
 
 {{ end }}

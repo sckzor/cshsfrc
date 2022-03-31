@@ -7,25 +7,22 @@ RADIANS = "radians"
 FEET_TO_METERS = 0.3048
 DEG_TO_RAD = 0.0174533
 
-exported = ""
+exported = "Start:0\n"
 
 # Functions to drive and move and other stuff
-def drive(distance, units):
+def driveX(distance, units):
     global exported
     if units == FEET:
         distance = distance * FEET_TO_METERS
-    exported += f"Drive:{distance}\n"
+    exported += f"DriveX:{distance}\n"
 
-def turn(amount, units):
+def driveY(amount, units):
     global exported
-    if units == DEGREES:
-        amount = amount * DEG_TO_RAD
-    exported += f"Turn:{amount}\n"
-
-def stop():
-    global exported
-    exported += f"Stop:0\n"
+    if units == FEET:
+        distance = distance * FEET_TO_METERS
+    exported += f"DriveY:{amount}\n"
 
 def run():
     global exported
+    exported += "End:0\n"
     print(f"=== Action Output ===\n{exported}")

@@ -119,7 +119,7 @@ func saveActions(username string, actions string) {
 // Function to process the loading of the virtual IDE
 func ide(w http.ResponseWriter, r *http.Request) {
 	var output string = "[None yet]"
-	var oldCode = "import robot\n"
+	var oldCode = ""
 	
 	c, err := r.Cookie("session_token")
 	
