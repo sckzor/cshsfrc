@@ -7,7 +7,7 @@ path = os.path.abspath(os.path.dirname(__file__))
 os.chdir(path+"/chrootdir")
 os.chroot(path+"/chrootdir")
 
-bad_words = ["sys", "os", "open", "exec", "while", "import", "exit", "close" ]
+bad_words = ["sys", "os", "open", "exec", "while", "import", "exit", "close", "print" ]
 code = ""
 
 if len(sys.argv) <= 1:
@@ -21,5 +21,9 @@ for line in code.splitlines():
             for bad in bad_words:
                 print(" - " + bad)
             exit()
-            
-exec(code)
+try:            
+    exec(code)
+except Exception as e:
+    err = str(e)
+    err.replace("status", "code")
+    print(e)

@@ -155,7 +155,9 @@ func ide(w http.ResponseWriter, r *http.Request) {
 					output = "Command Timed Out!\nEnsure that there are no delays or infinite loops in your code.\nIf the are no erroneous code blocks, try again, this could be an intermittant failure." 
 				}
 
-
+				if output == "" {
+					output = "Error! Remember to call robot.run() to execute your code!"
+				}
 
 				split := strings.Split(output, "=== Action Output ===\n")	
 				if len(split) > 1 {

@@ -1,23 +1,46 @@
+
 {{ define "layout" }}
 
 <html>
 	<head>
+		<link rel="stylesheet" href="/static/style.css">
 		<title> NHS CSHS FRC </title>
 	</head>
 
 	<body>
-		<h1> Login! </h1>
-		<hr>
-		<form method="POST" action="/auth/">
-			<label for="username"> Username: </label> <br>
-			<input type="text" id="username" name="username"><br>
-			<label for="password"> Password: </label> <br>
-			<input type="password" id="password" name="password"><br><br>
-			<input type="hidden" id="location" name="location" value="{{ .Location }}">
-			<p> {{ .Message }} </p>
-			<input type="submit" value="Submit">
-		</form>
+		<div class="main">
+			<div class="header">
+				<div class="header-icon">
+					<img src="/static/robostangs.png"> </img>
+				</div>
+
+				<div class="header-item">
+					<h1>Integrated Development Environment</h1>
+					<p> <a href="/ide/"> Code Editor </a>,  
+					<a href="/admin/"> Administration </a>, 
+					<a href="/about/"> About </a></p>
+				</div>
+			</div>
+
+			<div class="body">
+				<div class="nested-body">
+					<h2> Login! </h1>
+					<p> This is the login you were given by the person adminstrating the event,
+					if you cannot get the login to work, please contact the person distributing logins </p>
+					<form method="POST" action="/auth/">
+						<label for="username"> Username: </label> <br>
+						<input type="text" id="username" name="username"><br>
+						<label for="password"> Password: </label> <br>
+						<input type="password" id="password" name="password"><br><br>
+						<input type="hidden" id="location" name="location" value="{{ .Location }}">
+						<p> {{ .Message }} </p>
+						<input type="submit" value="Submit">
+					</form>
+				</div>
+			</div>
+		</div>
 	</body>
 </html>
 
 {{ end }}
+
